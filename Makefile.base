@@ -1,0 +1,132 @@
+include ../toolchain/Makefile.paths
+
+
+###
+##   Replace with xerces foo rather than the xmllint hack...
+##
+lint:
+	@$(XMLLINT) --xinclude --output build/lint.xml $(SRCFILE)
+	@java -jar $(JING) \
+	$(TOOLS)docbook-5.0/rng/docbookxi.rng build/lint.xml > build/lint.log
+	@echo "Document has been linted, see build/lint.log for details."
+
+test:
+	@echo $(FILENAME)
+
+all: pdf html epub kindle
+
+png: _setup
+	@cd assets/images/; \
+	echo "Processing SVG assets"; \
+	for file in *.svg; do \
+		$(INKSCAPE) -d 300 -f $(CURDIR)/assets/images/$$file \
+		 -e $(CURDIR)/build/figs/$$file.png --export-area-snap; \
+		echo "processed" $$file; \
+	done; cd ../../build/figs/; \
+	echo "Done processing SVG assets"
+
+_png: _setup
+	java -jar $(BATIK) -d build/figs assets/images/*.svg
+
+
+pdf: print ipad
+
+print: _setup
+	java -classpath "$(SAXON):$(SAXON_EXTENSION)" \
+	net.sf.saxon.Transform \
+	-xi:on -o:build/print.fo $(SRCFILE) $(PRINT_XSL)
+	$(FOP) -a -c $(TOOLCHAIN)fop-setup.xml -fo build/print.fo -pdf build/$(PRINT_DST)
+
+ipad: _setup
+	java -classpath "$(SAXON):$(SAXON_EXTENSION):$(XSLTHL)" \
+	-Dxslthl.config="$(TOOLCHAIN)docbook-xsl/highlighting/xslthl-config.xml" \
+	net.sf.saxon.Transform \
+	-xi:on -o:build/ipad.fo $(SRCFILE) $(IPAD_XSL)
+	$(FOP) -a -noprint -c $(TOOLCHAIN)fop-setup.xml -fo build/ipad.fo -pdf build/$(IPAD_DST)
+	
+html: chunkhtml
+	$(XSLTPROC) \
+	--stringparam html.stylesheet ../css/radiodoc.css \
+	--stringparam chunker.output.encoding UTF-8 \
+	--xinclude --output $(HTML_DST) $(HTML_XSL) $(SRCFILE)
+
+chunkhtml: _setup _copy-assets
+	$(XSLTPROC) \
+	--stringparam html.stylesheet ../css/radiodoc.css \
+	--stringparam chunker.output.encoding UTF-8 \
+	--xinclude --output $(CHUNK_DST) $(CHUNK_XSL) $(SRCFILE)
+
+rawepub: _setup
+	$(XSLTPROC) --xinclude --output build/epub/ $(EPUB_XSL) $(SRCFILE); \
+	mkdir -p build/epub/OEBPS/figs; \
+	cp build/figs/* build/epub/OEBPS/figs/; \
+	mkdir -p build/epub/OEBPS/assets/images/admons; \
+	cp $(TOOLCHAIN)images/admons/* build/epub/OEBPS/assets/images/admons/;
+
+epub: rawepub
+	cd build/epub/; \
+	echo "application/epub+zip" > mimetype; \
+	$(ZIP) -0Xq ../$(EPUB_DST) mimetype; \
+	$(ZIP) -Xr9D ../$(EPUB_DST) *; \
+	cd ../../
+
+#$(ZIP) -0Xq ../$(EPUB_DST) mimetype; \
+$(ZIP) -Xr9D ../$(EPUB_DST) *; \
+
+#	epub
+kindle: _setup
+	$(FOP) -c $(TOOLCHAIN)fop-setup.xml -xml $(SRCFILE) -xsl $(KINDLE_XSL) -pdf build/$(KINDLE_DST)
+#	-$(KINDLEGEN) build/$(EPUB_DST)
+
+txt: _setup
+	$(FOP) -a -c $(TOOLCHAIN)fop-setup.xml -xml $(SRCFILE) -xsl $(PRINT_XSL) -txt build/test.txt
+
+bundle: png all bundleepub bundlekindle bundleipad bundleprint bundlehtml
+	mv build/*.zip dist/
+
+bundlesetup:
+	cp $(TOOLCHAIN)LICENSE build/LICENSE
+	cp $(TOOLCHAIN)README.md build/README
+
+bundleprint: bundlesetup
+	cd build/;\
+	$(ZIP) -Xr9D $(FILENAME)-print.zip $(PRINT_DST) LICENSE README;\
+	cd ../
+
+bundleipad: bundlesetup
+	cd build/; \
+	$(ZIP) -Xr9D $(FILENAME)-ipad.zip $(IPAD_DST) LICENSE README;\
+	cd ../
+
+bundleepub: bundlesetup
+	cd build/;\
+	$(ZIP) -Xr9D $(FILENAME)-epub.zip $(EPUB_DST) LICENSE README;\
+	cd ../
+
+bundlekindle: bundlesetup
+	cd build/;\
+	$(ZIP) -Xr9D $(FILENAME)-kindle.zip $(KINDLE_DST) LICENSE README;\
+	cd ../
+
+bundlehtml: bundlesetup
+	cd build/html;\
+	$(ZIP) -Xr9D ../$(FILENAME)-html.zip * ../LICENSE ../README;\
+	cd ../../
+
+clean:
+	rm -rf build
+
+_setup:
+	@mkdir -p dist
+	@mkdir -p build
+	@mkdir -p build/figs
+	@mkdir -p build/html
+	@mkdir -p build/html/css
+	@mkdir -p build/html/fonts
+	@mkdir -p build/html/html
+	@mkdir -p build/html/html/figs
+
+_copy-assets: png
+	@cp -R $(TOOLCHAIN)css/* build/html/css/
+	@cp -R $(TOOLCHAIN)fonts/* build/html/fonts/
+	@cp build/figs/* build/html/html/figs/

@@ -1,0 +1,76 @@
+TOOLCHAIN = ../toolchain/
+#TOOLS = $(shell pwd)/$(TOOLCHAIN)tools/
+TOOLS = $(TOOLCHAIN)tools/
+
+FOP = "$(TOOLS)fop-1.1/fop"
+BATIK = $(TOOLS)batik-1.7/batik-rasterizer.jar
+#FOP = $(TOOLS)fop-1.1/build/fop.jar
+SAXON = $(TOOLS)saxon/saxon9he.jar
+XSLTHL = $(TOOLS)xslthl-2.1.0/xslthl-2.1.0.jar
+JING = $(TOOLS)jing-20091111/bin/jing.jar
+XERCES = $(TOOLS)xerces-2_11_0/xercesImpl.jar
+
+SAXON_EXTENSION = $(shell pwd)/$(TOOLCHAIN)docbook-xsl/extensions/saxon65.jar
+
+###  Tools not included with the toolchain...  ###
+ifeq ($(OS),Windows_NT)
+	ZIP = d:/bin/zip/zip
+	MOGRIFY = d:/bin/ImageMagick/mogrify.exe
+	INKSCAPE = d:/bin/inkscape/inkscape.exe
+	XSLTPROC = d:/bin/libxml/bin/xsltproc
+	XMLLINT = d:/bin/libxml/bin/xmllint
+	KINDLEGEN = "D:\bin\Amazon\Kindle Previewer\lib\kindlegen.exe"
+#	include $(TOOLCHAIN)classpath.nt
+else
+	ZIP = zip
+	MOGRIFY = d:/bin/ImageMagick/mogrify.exe
+	INKSCAPE = d:/bin/inkscape/inkscape.exe
+	XSLTPROC = xsltproc
+	XMLLINT = xmllint
+	KINDLEGEN = "D:\bin\Amazon\Kindle Previewer\lib\kindlegen.exe"
+#	include $(TOOLCHAIN)classpath.unix
+endif
+
+ifndef MODEL
+	MODEL = $(shell basename $(CURDIR))
+endif
+
+ifndef SRC
+	SRC = source/book.xml
+endif
+
+REV = $(shell git describe --tags)
+
+ifeq ($(SRC),source/book.xml)
+	ifndef NO_REV
+		FILENAME = $(MODEL)_$(REV)
+		SRCFILE = $(SRC)
+	else
+		FILENAME = $(MODEL)
+		SRCFILE = $(SRC)
+	endif
+else
+	FILENAME = $(SRC)
+	SRCFILE = source/$(SRC).xml
+endif
+
+PRINT_DST = $(FILENAME)-print.pdf
+PRINT_XSL = $(TOOLCHAIN)print-stylesheet.xsl
+
+IPAD_DST = $(FILENAME)-ipad.pdf
+IPAD_XSL = $(TOOLCHAIN)ipad-stylesheet.xsl
+#PDF_XSL = $(TOOLCHAIN)docbook-xsl-1.77.1/fo/docbook.xsl
+
+CHUNK_XSL = $(TOOLCHAIN)chunk-stylesheet.xsl
+CHUNK_DST = build/html/html/
+
+HTML_DST = $(CHUNK_DST)single.html
+HTML_XSL = $(TOOLCHAIN)html-stylesheet.xsl
+
+# EPUB uses a path relative to build/epub...
+EPUB_DST = $(FILENAME).epub
+EPUB_XSL = $(TOOLCHAIN)epub-stylesheet.xsl
+
+#KINDLE_DST = $(FILENAME).mobi
+KINDLE_DST = $(FILENAME)-kindle.pdf
+KINDLE_XSL = $(TOOLCHAIN)kindle-stylesheet.xsl

@@ -1,0 +1,35 @@
+<fop version="1.0">
+  <renderers>
+    <renderer mime="application/pdf">
+      <fonts>
+        <directory recursive="true">../toolchain/fonts</directory>
+        <auto-detect/>
+        <!--
+        <font kerning="yes" embed-url="toolchain/fonts/charis/Charis-Italic.ttf">
+          <font-triplet name="Charis-Italic" style="normal" weight="normal"/>
+        </font>
+        <font kerning="yes" embed-url="toolchain/fonts/amble/Amble-LightCondensed.ttf">
+          <font-triplet name="Amble-LightCondensed" style="normal" weight="normal"/>
+        </font>
+        <font kerning="yes" embed-url="toolchain/fonts/amble/Amble-Regular.ttf">
+          <font-triplet name="Amble-Regular" style="normal" weight="normal"/>
+        </font>
+
+        <font kerning="yes" embed-url="toolchain/fonts/bitter/Bitter-Regular.ttf">
+          <font-triplet name="Bitter-Regular" style="normal" weight="normal"/>
+        </font>
+        <font kerning="yes" embed-url="toolchain/fonts/bitter/Bitter-Bold.ttf">
+          <font-triplet name="Bitter-Bold" style="normal" weight="bold"/>
+        </font>
+        <font kerning="yes" embed-url="toolchain/fonts/bitter/Bitter-Italic.ttf">
+          <font-triplet name="Bitter-Italic" style="italic" weight="normal"/>
+        </font>
+
+        <font kerning="yes" embed-url="toolchain/fonts/sourcecodepro/SourceCodePro-Regular.ttf">
+          <font-triplet name="SourceCodePro-Regular" style="normal" weight="normal"/>
+        </font>
+        -->
+      </fonts>
+    </renderer>
+  </renderers>
+</fop>
