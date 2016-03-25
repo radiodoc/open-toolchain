@@ -54,6 +54,9 @@ else
 	SRCFILE = source/$(SRC).xml
 endif
 
+SVG = $(shell find assets/images -name "*.svg")
+PNG := $(patsubst assets/images/%.svg,build/figs/%.png,$(SVG))
+
 PRINT_DST = $(FILENAME)-print.pdf
 PRINT_XSL = $(TOOLCHAIN)print-stylesheet.xsl
 

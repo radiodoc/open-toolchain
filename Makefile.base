@@ -15,29 +15,21 @@ test:
 
 all: pdf html epub kindle
 
+build/figs/%.png: assets/images/%.svg
+	java -jar $(BATIK) -d $@ $<
+
 png: _setup
-	@cd assets/images/; \
-	echo "Processing SVG assets"; \
-	for file in *.svg; do \
-		$(INKSCAPE) -d 300 -f $(CURDIR)/assets/images/$$file \
-		 -e $(CURDIR)/build/figs/$$file.png --export-area-snap; \
-		echo "processed" $$file; \
-	done; cd ../../build/figs/; \
-	echo "Done processing SVG assets"
-
-_png: _setup
 	java -jar $(BATIK) -d build/figs assets/images/*.svg
-
 
 pdf: print ipad
 
-print: _setup
+print: _setup $(PNG)
 	java -classpath "$(SAXON):$(SAXON_EXTENSION)" \
 	net.sf.saxon.Transform \
 	-xi:on -o:build/print.fo $(SRCFILE) $(PRINT_XSL)
 	$(FOP) -a -c $(TOOLCHAIN)fop-setup.xml -fo build/print.fo -pdf build/$(PRINT_DST)
 
-ipad: _setup
+ipad: _setup $(PNG)
 	java -classpath "$(SAXON):$(SAXON_EXTENSION):$(XSLTHL)" \
 	-Dxslthl.config="$(TOOLCHAIN)docbook-xsl/highlighting/xslthl-config.xml" \
 	net.sf.saxon.Transform \
@@ -50,13 +42,13 @@ html: chunkhtml
 	--stringparam chunker.output.encoding UTF-8 \
 	--xinclude --output $(HTML_DST) $(HTML_XSL) $(SRCFILE)
 
-chunkhtml: _setup _copy-assets
+chunkhtml: _setup $(PNG) _copy-assets
 	$(XSLTPROC) \
 	--stringparam html.stylesheet ../css/radiodoc.css \
 	--stringparam chunker.output.encoding UTF-8 \
 	--xinclude --output $(CHUNK_DST) $(CHUNK_XSL) $(SRCFILE)
 
-rawepub: _setup
+rawepub: _setup $(PNG)
 	$(XSLTPROC) --xinclude --output build/epub/ $(EPUB_XSL) $(SRCFILE); \
 	mkdir -p build/epub/OEBPS/figs; \
 	cp build/figs/* build/epub/OEBPS/figs/; \
@@ -74,14 +66,14 @@ epub: rawepub
 $(ZIP) -Xr9D ../$(EPUB_DST) *; \
 
 #	epub
-kindle: _setup
+kindle: _setup $(PNG)
 	$(FOP) -c $(TOOLCHAIN)fop-setup.xml -xml $(SRCFILE) -xsl $(KINDLE_XSL) -pdf build/$(KINDLE_DST)
 #	-$(KINDLEGEN) build/$(EPUB_DST)
 
 txt: _setup
 	$(FOP) -a -c $(TOOLCHAIN)fop-setup.xml -xml $(SRCFILE) -xsl $(PRINT_XSL) -txt build/test.txt
 
-bundle: png all bundleepub bundlekindle bundleipad bundleprint bundlehtml
+bundle: all bundleepub bundlekindle bundleipad bundleprint bundlehtml
 	mv build/*.zip dist/
 
 bundlesetup:
@@ -116,7 +108,7 @@ bundlehtml: bundlesetup
 clean:
 	rm -rf build
 
-_setup:
+_setup: 
 	@mkdir -p dist
 	@mkdir -p build
 	@mkdir -p build/figs
@@ -126,7 +118,7 @@ _setup:
 	@mkdir -p build/html/html
 	@mkdir -p build/html/html/figs
 
-_copy-assets: png
+_copy-assets: $(PNG)
 	@cp -R $(TOOLCHAIN)css/* build/html/css/
 	@cp -R $(TOOLCHAIN)fonts/* build/html/fonts/
 	@cp build/figs/* build/html/html/figs/
